@@ -9,15 +9,15 @@ on:
     branches: [dev]
 
 env:
-  REGISTRY: dabblefox${{ github.ref }}.azurecr.io
-  #REGISTRY: dabblefoxdev.azurecr.io
+  #REGISTRY: dabblefox${{ github.ref }}.azurecr.io
+  REGISTRY: dabblefoxdev.azurecr.io
   IMAGE_NAME: dabblefox
   TAG: ${{ github.sha }}
 
 jobs:
   build-and-deploy:
-    environment: ${{ github.ref }}
-    # environment: dev
+    # environment: ${{ github.ref }}
+    environment: dev
 
     runs-on: ubuntu-latest
 
