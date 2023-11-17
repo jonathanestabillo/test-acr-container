@@ -10,7 +10,7 @@ on:
 
 env:
   #REGISTRY: dabblefox${{ github.ref }}.azurecr.io
-  REGISTRY: dabblefoxdev.azurecr.io
+  REGISTRY: jonestabillotest.azurecr.io
   IMAGE_NAME: dabblefox
   TAG: ${{ github.sha }}
 
