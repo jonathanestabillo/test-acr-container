@@ -9,7 +9,7 @@ on:
     branches: [dev, staging, main]
 
 env:
-  IMAGE_NAME: dabblefox-2
+  IMAGE_NAME: dabblefox-api
   TAG: ${{ github.sha }}
 
 jobs:
@@ -41,4 +41,4 @@ jobs:
       - name: Deploy to Azure Container Registry
         run: |
           docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          docker push ${{ ensecretsv.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker push ${{ secretsv.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
