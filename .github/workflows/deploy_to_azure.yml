@@ -13,35 +13,25 @@ env:
   TAG: ${{ github.sha }}
 
 jobs:
-  determine-env:
+  build-and-deploy:
+    needs: determine-env
     runs-on: ubuntu-latest
-    outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
 
     steps:
       - name: Determine Environment
         id: set-env
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "environment=prod" >> $GITHUB_ENV
+            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
           elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            echo "environment=dev" >> $GITHUB_ENV
+            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
           else
-            echo "environment=staging" >> $GITHUB_ENV
+            echo "ENVIRONMENT=staging" >> $GITHUB_ENV
           fi
 
-  build-and-deploy:
-    needs: determine-env
-    runs-on: ubuntu-latest
-    environment: ${{ needs.determine-env.outputs.environment }}
-
-    steps:
-      - name: Debug
-        run: echo "${{ toJson(needs) }}"
-        
       - name: Show Environment
         run: |
-          echo "${{ needs.determine-env.outputs.environment }}"
+          echo "${{ env.ENVIRONMENT }}"
 
 #      - name: Checkout code
 #        uses: actions/checkout@v3
