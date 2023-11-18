@@ -13,41 +13,41 @@ env:
   TAG: ${{ github.sha }}
 
 jobs:
-  build-and-deploy:
-    environment: dev
+  determine-env:
     runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
 
     steps:
       - name: Determine Environment
         id: set-env
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+            echo "environment=prod" >> $GITHUB_ENV
           elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            echo "ENVIRONMENT=dev" >> $GITHUB_ENV
+            echo "environment=dev" >> $GITHUB_ENV
           else
-            echo "ENVIRONMENT=staging" >> $GITHUB_ENV
+            echo "environment=staging" >> $GITHUB_ENV
           fi
 
-      - name: Show Environment
-        run: |
-          echo "${{ env.ENVIRONMENT }}"
+  build-and-deploy:
+    needs: determine-env
+    runs-on: ubuntu-latest
+    #environment: ${{ needs.determine-env.outputs.environment }}
 
-      - name: Show Registry
-        run: |
-          echo "${{ vars.REGISTRY }}"
+    steps:
+      - name: Debug
+        run: echo "${{ toJson(needs) }}"
 
-#      - name: Login to Azure Container Registry
-#        uses: azure/docker-login@v1
-#        with:
-#          login-server: ${{ env.REGISTRY }}
-#          username: ${{ secrets.REGISTRY_USERNAME }}
-#          password: ${{ secrets.REGISTRY_PASSWORD }}
-#
 #      - name: Checkout code
 #        uses: actions/checkout@v3
 #
-#      
+#      - name: Login to Azure Container Registry
+#        uses: azure/docker-login@v1
+#        with:
+#          login-server: ${{ vars.REGISTRY }}
+#          username: ${{ secrets.REGISTRY_USERNAME }}
+#          password: ${{ secrets.REGISTRY_PASSWORD }}
 #
 #      - name: Build, tag, and push image to ACR
 #        run: |
