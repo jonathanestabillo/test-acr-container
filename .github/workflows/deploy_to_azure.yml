@@ -13,9 +13,10 @@ env:
   TAG: ${{ github.sha }}
 
 jobs:
-  build-and-deploy:
+  determine-env:
     runs-on: ubuntu-latest
-    environment: ${{ steps.set-env.outputs.environment }}
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
 
     steps:
       - name: Determine Environment
@@ -29,6 +30,12 @@ jobs:
             echo "environment=staging" >> $GITHUB_ENV
           fi
 
+  build-and-deploy:
+    needs: determine-env
+    runs-on: ubuntu-latest
+    environment: ${{ needs.determine-env.outputs.environment }}
+
+    steps:
       - name: Show Environment
         run: |
           echo ${{ env.REGISTRY }}
