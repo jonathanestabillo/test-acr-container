@@ -15,6 +15,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: ${{ env.ENVIRONMENT }}
 
     steps:
       - name: Determine Environment
@@ -32,18 +33,21 @@ jobs:
         run: |
           echo "${{ env.ENVIRONMENT }}"
 
-      - name: Login to Azure Container Registry
-        environment: ${{ env.ENVIRONMENT }}
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ env.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Show Registry
+        run: |
+          echo "${{ env.REGISTRY }}"
 
+#      - name: Login to Azure Container Registry
+#        uses: azure/docker-login@v1
+#        with:
+#          login-server: ${{ env.REGISTRY }}
+#          username: ${{ secrets.REGISTRY_USERNAME }}
+#          password: ${{ secrets.REGISTRY_PASSWORD }}
+#
 #      - name: Checkout code
 #        uses: actions/checkout@v3
 #
-       
+#      
 #
 #      - name: Build, tag, and push image to ACR
 #        run: |
