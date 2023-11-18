@@ -36,21 +36,24 @@ jobs:
     environment: ${{ needs.determine-env.outputs.environment }}
 
     steps:
+      - name: Debug
+        run: echo "${{ toJson(needs) }}"
+        
       - name: Show Environment
         run: |
           echo "${{ needs.determine-env.outputs.environment }}"
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Login to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ env.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-
-      - name: Build, tag, and push image to ACR
-        run: |
-          docker build . -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#
+#      - name: Login to Azure Container Registry
+#        uses: azure/docker-login@v1
+#        with:
+#          login-server: ${{ env.REGISTRY }}
+#          username: ${{ secrets.REGISTRY_USERNAME }}
+#          password: ${{ secrets.REGISTRY_PASSWORD }}
+#
+#      - name: Build, tag, and push image to ACR
+#        run: |
+#          docker build . -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+#          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
