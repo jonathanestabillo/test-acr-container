@@ -35,7 +35,7 @@ jobs:
 
       - name: Show Registry
         run: |
-          echo "${{ secrets.REGISTRY_USERNAME }}"
+          echo "${{ vars.REGISTRY }}"
 
 #      - name: Login to Azure Container Registry
 #        uses: azure/docker-login@v1
