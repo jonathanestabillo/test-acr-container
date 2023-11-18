@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Show Environment
         run: |
-          echo ${{ secrets.REGISTRY_USERNAME }}
+          echo ${{ needs.determine-env.outputs.environment }}
 
       - name: Checkout code
         uses: actions/checkout@v3
