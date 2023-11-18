@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Show Environment
         run: |
-          echo ${{ needs.determine-env.outputs.environment }}
+          echo "${{ needs.determine-env.outputs.environment }}"
 
       - name: Checkout code
         uses: actions/checkout@v3
