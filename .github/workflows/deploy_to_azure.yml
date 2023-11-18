@@ -14,10 +14,9 @@ env:
 
 jobs:
   build-and-deploy:
-    set-env:
-      runs-on: ubuntu-latest
-      outputs:
-        environment: ${{ steps.set-env.outputs.environment }}
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
 
     steps:
       - name: Determine Environment
