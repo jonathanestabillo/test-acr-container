@@ -33,11 +33,11 @@ jobs:
   build-and-deploy:
     needs: determine-env
     runs-on: ubuntu-latest
-    #environment: ${{ needs.determine-env.outputs.environment }}
+    environment: ${{ needs.determine-env.outputs.environment }}
 
     steps:
       - name: Debug
-        run: echo "${{ toJson(needs) }}"
+        run: echo "${{ vars.REGISTRY }}"
 
 #      - name: Checkout code
 #        uses: actions/checkout@v3
