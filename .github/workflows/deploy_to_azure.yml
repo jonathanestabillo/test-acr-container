@@ -1,39 +1,44 @@
 
-name: Deploy to Azure Container Registry (ACR)
+name: Deploy API to ACR
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, staging, main]
   
   workflow_dispatch:
-    branches: [dev]
+    branches: [dev, staging, main]
 
 env:
-  #REGISTRY: dabblefox${{ github.ref }}.azurecr.io
-  #REGISTRY: jonestabillotest.azurecr.io
-  REGISTRY: dabblefoxdev.azurecr.io
   IMAGE_NAME: dabblefox-2
   TAG: ${{ github.sha }}
 
 jobs:
   build-and-deploy:
-    # environment: ${{ github.ref }}
-    environment: dev
-
     runs-on: ubuntu-latest
 
     steps:
+      - name: Determine Environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "::set-output name=environment::production"
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "::set-output name=environment::dev"
+          else
+            echo "::set-output name=environment::staging"
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ env.REGISTRY }}
+          login-server: ${{ secrets.REGISTRY }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Deploy to Azure Container Registry
         run: |
-          docker build . -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker push ${{ ensecretsv.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
