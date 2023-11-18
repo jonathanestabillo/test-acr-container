@@ -30,6 +30,10 @@ jobs:
             echo "environment=staging" >> $GITHUB_ENV
           fi
 
+      - name: Show Environment
+        run: |
+          echo ${{ env.REGISTRY }}
+
       - name: Checkout code
         uses: actions/checkout@v3
 
