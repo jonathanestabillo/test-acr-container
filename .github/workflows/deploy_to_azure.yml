@@ -14,8 +14,8 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
     environment: ${{ env.ENVIRONMENT }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Determine Environment
