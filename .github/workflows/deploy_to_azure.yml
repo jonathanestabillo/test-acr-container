@@ -23,11 +23,11 @@ jobs:
         id: set-env
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "environment=prod" >> $GITHUB_ENV
+            echo "environment=prod" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            echo "environment=dev" >> $GITHUB_ENV
+            echo "environment=dev" >> $GITHUB_OUTPUT
           else
-            echo "environment=staging" >> $GITHUB_ENV
+            echo "environment=staging" >> $GITHUB_OUTPUT
           fi
 
   build-and-deploy:
