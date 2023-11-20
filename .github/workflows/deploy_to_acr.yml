@@ -2,11 +2,11 @@
 name: Deploy API to ACR
 
 on:
-  push:
-    branches: [dev, staging, main]
+#  push:
+#    branches: [dev, staging, main]
   
   workflow_dispatch:
-    branches: [dev, staging, main]
+    branches: [dev]
 
 env:
   IMAGE_NAME: dabblefox-api
@@ -42,28 +42,21 @@ jobs:
       - name: Login to ACR
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ vars.REGISTRY }}
+          login-server: ${{ secrets.REGISTRY }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Build, tag, and push image to ACR
         run: |
-          docker build . -t ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          docker push ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
-#      - name: Login to Azure
-#        uses: azure/login@v1
-#        with:
-#          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ vars.APP_NAME }}
+          app-name: ${{ secrets.APP_NAME }}
           #slot-name: 'production' # Change this if you have different slots
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          images: ${{ vars.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-
-#      - name: Logout of Azure
-#        run: az logout
+          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+          images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
