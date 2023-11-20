@@ -14,23 +14,23 @@ jobs:
     environment: dev
 
     steps:
-#    - name: Checkout code
-#      if: github.event.action != 'closed'
-#      uses: actions/checkout@v2
-#
-#    - name: Login to ACR
-#      if: github.event.action != 'closed'
-#      uses: azure/docker-login@v1
-#      with:
-#        login-server: ${{ secrets.REGISTRY }}
-#        username: ${{ secrets.REGISTRY_USERNAME }}
-#        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - name: Checkout code
+      if: github.event.action != 'closed'
+      uses: actions/checkout@v2
 
-#    - name: Build, tag, and push image to ACR
-#      if: github.event.action != 'closed'
-#      run: |
-#        docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-#        docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+    - name: Login to ACR
+      if: github.event.action != 'closed'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.REGISTRY }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Build, tag, and push image to ACR
+      if: github.event.action != 'closed'
+      run: |
+        docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
     - name: Login to Azure
       uses: azure/login@v1
@@ -45,25 +45,6 @@ jobs:
         az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
         echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
 
-#    - name: Set up Python for Azure Scripting
-#      if: github.event.action != 'closed'
-#      uses: actions/setup-python@v2
-#      with:
-#        python-version: '3.x'
-#
-#    - name: Install Azure CLI
-#      run: pip install azure-cli
-#
-#    - name: Login to Azure using Publishing Profile
-#      run: |
-#        echo ${{ secrets.PUBLISH_PROFILE }} > publishProfile.xml
-#        az webapp deployment slot create \
-#        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-#        --name ${{ secrets.APP_NAME }} \
-#        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }} \
-#        --configuration-source ${{ secrets.APP_NAME }} 
-#        echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
-
 #    - name: Deploy from ACR to Slot
 #      if: github.event.action != 'closed'
 #      run: |
@@ -76,15 +57,15 @@ jobs:
 #        --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
 #        --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
 
-#    - name: Deploy from ACR to AAS Slot
-#      if: github.event.action != 'closed'
-#      uses: azure/webapps-deploy@v2
-#      with:
-#        app-name: ${{ secrets.APP_NAME }}
-#        slot-name: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
-#        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-#        images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-#
+    - name: Deploy from ACR to AAS Slot
+      if: github.event.action != 'closed'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.APP_NAME }}
+        slot-name: ${{ github.event.pull_request.number }}
+        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+        images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
     - name: Cleanup AAS Slot
       if: github.event.action == 'closed'
       run: |
