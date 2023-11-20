@@ -40,10 +40,10 @@ jobs:
     - name: Create Deployment Slot
       if: github.event.action != 'closed'
       run: |
-        SLOT_NAME="${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
+        SLOT_NAME="${{ github.event.pull_request.number }}"
         APP_NAME="${{ secrets.APP_NAME }}"
         az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
-        echo "Deployment slot created: $SLOT_NAME"
+        echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
 
 #    - name: Set up Python for Azure Scripting
 #      if: github.event.action != 'closed'
@@ -91,5 +91,5 @@ jobs:
         az webapp deployment slot delete \
         --resource-group ${{ secrets.RESOURCE_GROUP }} \
         --name ${{ secrets.APP_NAME }}  \
-        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
+        --slot ${{ github.event.pull_request.number }}
         echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
