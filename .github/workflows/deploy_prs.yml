@@ -85,11 +85,11 @@ jobs:
 #        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
 #        images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 #
-#    - name: Cleanup AAS Slot
-#      if: github.event.action == 'closed'
-#      run: |
-#        az webapp deployment slot delete \
-#        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-#        --name ${{ secrets.APP_NAME }}  \
-#        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
-#        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
+    - name: Cleanup AAS Slot
+      if: github.event.action == 'closed'
+      run: |
+        az webapp deployment slot delete \
+        --resource-group ${{ secrets.RESOURCE_GROUP }} \
+        --name ${{ secrets.APP_NAME }}  \
+        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
+        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
