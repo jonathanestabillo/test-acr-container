@@ -45,26 +45,17 @@ jobs:
         az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
         echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
 
-#    - name: Deploy from ACR to Slot
-#      if: github.event.action != 'closed'
-#      run: |
-#        az webapp config container set \
-#        --name ${{ secrets.APP_NAME }}  \
-#        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-#        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }} \
-#        --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-#        --docker-registry-server-url https://${{ secrets.REGISTRY }} \
-#        --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
-#        --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
-
-    - name: Deploy from ACR to AAS Slot
+    - name: Deploy from ACR to Slot
       if: github.event.action != 'closed'
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ secrets.APP_NAME }}
-        slot-name: ${{ github.event.pull_request.number }}
-        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+      run: |
+        az webapp config container set \
+        --name ${{ secrets.APP_NAME }}  \
+        --resource-group ${{ secrets.RESOURCE_GROUP }} \
+        --slot ${{ github.event.pull_request.number }} \
+        --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --docker-registry-server-url https://${{ secrets.REGISTRY }} \
+        --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
+        --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Cleanup AAS Slot
       if: github.event.action == 'closed'
