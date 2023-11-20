@@ -14,28 +14,29 @@ jobs:
     environment: dev
 
     steps:
-    - name: Checkout code
-      if: github.event.action != 'closed'
-      uses: actions/checkout@v2
+#    - name: Checkout code
+#      if: github.event.action != 'closed'
+#      uses: actions/checkout@v2
+#
+#    - name: Login to ACR
+#      if: github.event.action != 'closed'
+#      uses: azure/docker-login@v1
+#      with:
+#        login-server: ${{ secrets.REGISTRY }}
+#        username: ${{ secrets.REGISTRY_USERNAME }}
+#        password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Login to ACR
-      if: github.event.action != 'closed'
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ secrets.REGISTRY }}
-        username: ${{ secrets.REGISTRY_USERNAME }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
-
-    - name: Build, tag, and push image to ACR
-      if: github.event.action != 'closed'
-      run: |
-        docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-        docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+#    - name: Build, tag, and push image to ACR
+#      if: github.event.action != 'closed'
+#      run: |
+#        docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+#        docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
     - name: Login to Azure
       uses: azure/login@v1
       with:
         creds: ${{ secrets.CREDENTIALS }}
+        allow-no-subscriptions: true
 
     - name: Create Deployment Slot
       if: github.event.action != 'closed'
@@ -76,20 +77,20 @@ jobs:
 #        --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
 #        --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Deploy from ACR to AAS Slot
-      if: github.event.action != 'closed'
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ secrets.APP_NAME }}
-        slot-name: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
-        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-        images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-
-    - name: Cleanup AAS Slot
-      if: github.event.action == 'closed'
-      run: |
-        az webapp deployment slot delete \
-        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --name ${{ secrets.APP_NAME }}  \
-        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
-        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
+#    - name: Deploy from ACR to AAS Slot
+#      if: github.event.action != 'closed'
+#      uses: azure/webapps-deploy@v2
+#      with:
+#        app-name: ${{ secrets.APP_NAME }}
+#        slot-name: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
+#        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+#        images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+#
+#    - name: Cleanup AAS Slot
+#      if: github.event.action == 'closed'
+#      run: |
+#        az webapp deployment slot delete \
+#        --resource-group ${{ secrets.RESOURCE_GROUP }} \
+#        --name ${{ secrets.APP_NAME }}  \
+#        --slot ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}
+#        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
