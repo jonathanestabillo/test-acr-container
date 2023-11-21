@@ -1,9 +1,9 @@
 
-name: Deploy API to ACR
+name: Deploy API to Azure Services
 
 on:
-#  push:
-#    branches: [dev, staging, main]
+  push:
+    branches: [dev]
   
   workflow_dispatch:
     branches: [dev]
@@ -52,7 +52,7 @@ jobs:
           docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
 
-      - name: Deploy to Azure App Service
+      - name: Deploy to AAS
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.APP_NAME }}
