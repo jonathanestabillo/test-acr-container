@@ -1,2 +1,10 @@
 node_modules/
 scratch
+credentials.json
+publish-profile.xml
+tempate-parameters.json
+credentials.json
+publish-profile.xml
+arm-template.json
+credentials-copy.json
+Notes.md
