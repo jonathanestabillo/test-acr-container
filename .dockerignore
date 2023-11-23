@@ -5,3 +5,8 @@ scratch
 .github
 .gitignore
 README.md
+credentials.json
+publish-profile.xml
+arm-template.json
+credentials-copy.json
+Notes.md
