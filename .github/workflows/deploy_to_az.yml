@@ -3,10 +3,10 @@ name: Deploy API to Azure Services
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, main]
   
   workflow_dispatch:
-    branches: [dev]
+    branches: [dev, main]
 
 env:
   IMAGE_NAME: dabblefox-api
