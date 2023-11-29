@@ -6,7 +6,7 @@ on:
 
 env:
   IMAGE_NAME: dabblefox-api
-  TAG: ${{ github.sha }}
+  TAG: ${{ github.event.pull_request.head.sha }}
 
 jobs:
   deploy:
