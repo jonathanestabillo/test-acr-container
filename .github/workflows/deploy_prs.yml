@@ -65,3 +65,12 @@ jobs:
         --name ${{ secrets.APP_NAME }}  \
         --slot ${{ github.event.pull_request.number }}
         echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
+
+    - name: Delete Container Image from ACR
+      if: github.event.action == 'closed'
+      run: |
+        az acr repository delete \
+        --name ${{ secrets.REGISTRY_NAME }} \
+        --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --yes
+        echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.TAG }}"
