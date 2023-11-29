@@ -38,6 +38,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Get SHA of the previous commit
+        id: prev_commit
+        run: echo "PREV_COMMIT_SHA=$(git rev-parse HEAD~1)" >> $GITHUB_ENV
 
       - name: Login to ACR
         uses: azure/docker-login@v1
@@ -57,3 +63,16 @@ jobs:
           app-name: ${{ secrets.APP_NAME }}
           publish-profile: ${{ secrets.PUBLISH_PROFILE }}
           images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+      
+      - name: Delete Container Image from ACR
+        run: |
+          az acr repository delete \
+          --name ${{ secrets.REGISTRY_NAME }} \
+          --image ${{ env.IMAGE_NAME }}:${{ env.PREV_COMMIT_SHA }} \
+          --yes
+          echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.PREV_COMMIT_SHA }}"
