@@ -3,7 +3,7 @@ var router = express.Router();
 
 // GET greet endpoint
 router.get('/', function(req, res, next) {
-  res.send('Hello Second PR!');
+  res.send('Hello Dev PR!');
 });
 
 module.exports = router;
