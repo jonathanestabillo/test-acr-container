@@ -51,12 +51,9 @@ jobs:
           docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
-
-      - name: Deploy to AAS
+      - name: Deploy to AA
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.APP_NAME }}
-          #slot-name: 'production' # Change this if you have different slots
           publish-profile: ${{ secrets.PUBLISH_PROFILE }}
           images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-

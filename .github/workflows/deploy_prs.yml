@@ -6,7 +6,7 @@ on:
 
 env:
   IMAGE_NAME: dabblefox-api
-  TAG: ${{ github.sha }}
+  TAG: ${{ github.event.pull_request.head.sha }}
 
 jobs:
   deploy:
@@ -35,7 +35,7 @@ jobs:
     - name: Login to Azure
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.CREDENTIALS }}
+        creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
 
     - name: Create Deployment Slot
       if: github.event.action != 'closed'
@@ -65,3 +65,12 @@ jobs:
         --name ${{ secrets.APP_NAME }}  \
         --slot ${{ github.event.pull_request.number }}
         echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
+
+    - name: Delete Container Image from ACR
+      if: github.event.action == 'closed'
+      run: |
+        az acr repository delete \
+        --name ${{ secrets.REGISTRY_NAME }} \
+        --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --yes
+        echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.TAG }}"
