@@ -1,39 +1,21 @@
 
-name: Deploy API to Azure Services
+name: Deploy API to Dev
 
 on:
   push:
-    branches: [dev, main]
+    branches: [dev]
   
   workflow_dispatch:
-    branches: [dev, main]
+    branches: [dev]
 
 env:
   IMAGE_NAME: dabblefox-api
   TAG: ${{ github.sha }}
 
 jobs:
-  determine-env:
-    runs-on: ubuntu-latest
-    outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
-
-    steps:
-      - name: Determine Environment
-        id: set-env
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "environment=prod" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          else
-            echo "environment=staging" >> $GITHUB_OUTPUT
-          fi
-
   build-and-deploy:
-    needs: determine-env
     runs-on: ubuntu-latest
-    environment: ${{ needs.determine-env.outputs.environment }}
+    environment: dev
 
     steps:
       - name: Checkout code
@@ -57,7 +39,7 @@ jobs:
           docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
-      - name: Deploy to AA
+      - name: Deploy to AAS
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.APP_NAME }}

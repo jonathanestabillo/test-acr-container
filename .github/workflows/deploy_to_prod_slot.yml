@@ -1,0 +1,63 @@
+
+name: Deploy API to Production Slot
+
+on:
+  push:
+    branches: [main]
+  
+  workflow_dispatch:
+    branches: [main]
+
+env:
+  IMAGE_NAME: dabblefox-api
+  TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get and format date of the latest commit
+        run: |
+          COMMIT_DATE=$(git log -1 --format=%ci)  # Get commit date in ISO 8601 format
+          FORMATTED_DATE=$(date -d "$COMMIT_DATE" +"%Y%m%d%H%M%S")
+          echo "FORMATTED_COMMIT_DATE=$FORMATTED_DATE" >> $GITHUB_ENV
+
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build, tag, and push image to ACR
+        run: |
+          docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+    
+      - name: Create Deployment Slot
+        run: |
+          SLOT_NAME="${{ env.FORMATTED_COMMIT_DATE }}"
+          APP_NAME="${{ secrets.APP_NAME }}"
+          az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
+          echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ env.FORMATTED_COMMIT_DATE }}"
+
+      - name: Deploy from ACR to Slot
+        run: |
+          az webapp config container set \
+          --name ${{ secrets.APP_NAME }}  \
+          --resource-group ${{ secrets.RESOURCE_GROUP }} \
+          --slot ${{ env.FORMATTED_COMMIT_DATE }} \
+          --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+          --docker-registry-server-url https://${{ secrets.REGISTRY }} \
+          --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
+          --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
