@@ -2,11 +2,11 @@ name: PR Deployment Workflow
 
 on:
   pull_request:
-    types: [opened, reopened, closed]
+    types: [opened, synchronize, reopened, closed]
 
 env:
   IMAGE_NAME: dabblefox-api
-  TAG: ${{ github.event.pull_request.head.sha }}
+  TAG: PR${{ github.event.pull_request.number }}
 
 jobs:
   deploy:
@@ -17,6 +17,29 @@ jobs:
     - name: Checkout code
       if: github.event.action != 'closed'
       uses: actions/checkout@v2
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+
+    - name: Cleanup AAS Slot
+      if: github.event.action == 'closed' || github.event.action == 'synchronize'
+      run: |
+        az webapp deployment slot delete \
+        --resource-group ${{ secrets.RESOURCE_GROUP }} \
+        --name ${{ secrets.APP_NAME }}  \
+        --slot ${{ env.TAG }}
+        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+  
+    - name: Delete Container Image from ACR
+      if: github.event.action == 'closed' || github.event.action == 'synchronize'
+      run: |
+        az acr repository delete \
+        --name ${{ secrets.REGISTRY_NAME }} \
+        --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --yes
+        echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.TAG }}"
 
     - name: Login to ACR
       if: github.event.action != 'closed'
@@ -32,18 +55,13 @@ jobs:
         docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
-    - name: Login to Azure
-      uses: azure/login@v1
-      with:
-        creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
-
     - name: Create Deployment Slot
-      if: github.event.action != 'closed'
+      if: github.event.action != 'closed' && github.event.action != 'synchronize'
       run: |
-        SLOT_NAME="${{ github.event.pull_request.number }}"
+        SLOT_NAME="${{ env.TAG }}"
         APP_NAME="${{ secrets.APP_NAME }}"
         az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
-        echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
+        echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ env.TAG }}"
 
     - name: Deploy from ACR to Slot
       if: github.event.action != 'closed'
@@ -51,26 +69,10 @@ jobs:
         az webapp config container set \
         --name ${{ secrets.APP_NAME }}  \
         --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --slot ${{ github.event.pull_request.number }} \
+        --slot ${{ env.TAG }} \
         --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
         --docker-registry-server-url https://${{ secrets.REGISTRY }} \
         --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
         --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Cleanup AAS Slot
-      if: github.event.action == 'closed'
-      run: |
-        az webapp deployment slot delete \
-        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --name ${{ secrets.APP_NAME }}  \
-        --slot ${{ github.event.pull_request.number }}
-        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
-
-    - name: Delete Container Image from ACR
-      if: github.event.action == 'closed'
-      run: |
-        az acr repository delete \
-        --name ${{ secrets.REGISTRY_NAME }} \
-        --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-        --yes
-        echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.TAG }}"
+    
