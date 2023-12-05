@@ -56,7 +56,7 @@ jobs:
         docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
     - name: Create Deployment Slot
-      if: github.event.action != 'closed' && github.event.action != 'synchronize'
+      if: github.event.action != 'closed'
       run: |
         SLOT_NAME="${{ env.TAG }}"
         APP_NAME="${{ secrets.APP_NAME }}"
