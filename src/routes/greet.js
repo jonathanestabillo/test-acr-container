@@ -3,7 +3,7 @@ var router = express.Router();
 
 // GET greet endpoint
 router.get('/', function(req, res, next) {
-  res.send('Production Testing');
+  res.send('The TestKeyVault value is: ' + process.env.TEST_KEYVAULT);
 });
 
 module.exports = router;
