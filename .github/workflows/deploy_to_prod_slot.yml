@@ -10,7 +10,6 @@ on:
 
 env:
   IMAGE_NAME: dabblefox-api
-  TAG: ${{ github.sha }}
 
 jobs:
   build-and-deploy:
@@ -36,8 +35,8 @@ jobs:
 
       - name: Build, tag, and push image to ACR
         run: |
-          docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-          docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.FORMATTED_COMMIT_DATE }}
+          docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.FORMATTED_COMMIT_DATE }}
 
       - name: Login to Azure
         uses: azure/login@v1
@@ -48,16 +47,28 @@ jobs:
         run: |
           SLOT_NAME="${{ env.FORMATTED_COMMIT_DATE }}"
           APP_NAME="${{ secrets.APP_NAME }}"
-          az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
-          echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ env.FORMATTED_COMMIT_DATE }}"
+          RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+          KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+          az webapp deployment slot create --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
+          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings TEST_SECRET="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/TestSecret)"
+          echo "Added application settings to the App Service Slot"
+          az webapp identity assign --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
+          echo "Assigned a managed identity to the App Service Slot"
+          echo "APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --query principalId -o tsv)" >> $GITHUB_ENV
+          echo "Deployment slot created: $APP_NAME-$SLOT_NAME"
 
-      - name: Deploy from ACR to Slot
+      - name: Update Key Vault Access Policy
+        run: |
+          az keyvault set-policy --name ${{ secrets.KEY_VAULT_NAME }} --object-id ${{ env.APP_OBJECT_ID }} --secret-permissions get list
+          echo "Key Vault access policy updated for ${{ secrets.APP_NAME }}-${{ env.FORMATTED_COMMIT_DATE }}"
+
+      - name: Deploy New Image from ACR to New Slot
         run: |
           az webapp config container set \
           --name ${{ secrets.APP_NAME }}  \
           --resource-group ${{ secrets.RESOURCE_GROUP }} \
           --slot ${{ env.FORMATTED_COMMIT_DATE }} \
-          --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+          --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.FORMATTED_COMMIT_DATE }} \
           --docker-registry-server-url https://${{ secrets.REGISTRY }} \
           --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
           --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
