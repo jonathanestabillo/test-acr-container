@@ -2,11 +2,11 @@ name: PR Deployment Workflow
 
 on:
   pull_request:
-    types: [opened, reopened, closed]
+    types: [opened, synchronize, reopened, closed]
 
 env:
   IMAGE_NAME: dabblefox-api
-  TAG: ${{ github.event.pull_request.head.sha }}
+  TAG: PR${{ github.event.pull_request.number }}
 
 jobs:
   deploy:
@@ -17,6 +17,44 @@ jobs:
     - name: Checkout code
       if: github.event.action != 'closed'
       uses: actions/checkout@v2
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+
+    - name: Delete Key Vault Access Policy
+      if: github.event.action == 'closed' || github.event.action == 'synchronize'
+      run: |
+        SLOT_NAME="${{ env.TAG }}"
+        APP_NAME="${{ secrets.APP_NAME }}"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --query principalId -o tsv)
+        az keyvault delete-policy --name $KEY_VAULT_NAME --object-id $APP_OBJECT_ID
+        echo "Key Vault access policy deleted for $APP_NAME-$SLOT_NAME"
+
+    - name: Cleanup AAS Slot
+      if: github.event.action == 'closed' || github.event.action == 'synchronize'
+      run: |
+        SLOT_NAME="${{ env.TAG }}"
+        APP_NAME="${{ secrets.APP_NAME }}"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        az webapp deployment slot delete \
+        --resource-group $RESOURCE_GROUP \
+        --name $APP_NAME  \
+        --slot $SLOT_NAME
+        echo "Deployment slot deleted: $APP_NAME-$SLOT_NAME"
+  
+    - name: Delete Container Image from ACR
+      if: github.event.action == 'closed' || github.event.action == 'synchronize'
+      run: |
+        az acr repository delete \
+        --name ${{ secrets.REGISTRY_NAME }} \
+        --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --yes
+        echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.TAG }}"
 
     - name: Login to ACR
       if: github.event.action != 'closed'
@@ -31,46 +69,51 @@ jobs:
       run: |
         docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-
-    - name: Login to Azure
-      uses: azure/login@v1
-      with:
-        creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+    
+#    - name: Get Key Vault Secrets
+#      if: github.event.action != 'closed'
+#      id: get_secrets
+#      run: |
+#        echo "TEST_SECRET_VALUE=$(az keyvault secret show --name TestSecretName --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)" >> $GITHUB_ENV
 
     - name: Create Deployment Slot
       if: github.event.action != 'closed'
       run: |
-        SLOT_NAME="${{ github.event.pull_request.number }}"
+        SLOT_NAME="${{ env.TAG }}"
         APP_NAME="${{ secrets.APP_NAME }}"
-        az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
-        echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
-
-    - name: Deploy from ACR to Slot
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        az webapp deployment slot create --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
+        az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings TEST_SECRET="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/TestSecret)"
+        echo "Added application settings to the App Service Slot"
+        az webapp identity assign --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
+        echo "Assigned a managed identity to the App Service Slot"
+        echo "APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --query principalId -o tsv)" >> $GITHUB_ENV
+        echo "Deployment slot created: $APP_NAME-$SLOT_NAME"
+    
+    - name: Update Key Vault Access Policy
       if: github.event.action != 'closed'
       run: |
+        az keyvault set-policy --name ${{ secrets.KEY_VAULT_NAME }} --object-id ${{ env.APP_OBJECT_ID }} --secret-permissions get list
+        echo "Key Vault access policy updated for ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+
+    - name: Deploy New Image from ACR to New Slot
+      if: github.event.action != 'closed'
+      run: |
+        SLOT_NAME="${{ env.TAG }}"
+        APP_NAME="${{ secrets.APP_NAME }}"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        REGISTRY="${{ secrets.REGISTRY }}"
+        REGISTRY_USERNAME="${{ secrets.REGISTRY_USERNAME }}"
+        REGISTRY_PASSWORD="${{ secrets.REGISTRY_PASSWORD }}"
         az webapp config container set \
-        --name ${{ secrets.APP_NAME }}  \
-        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --slot ${{ github.event.pull_request.number }} \
-        --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-        --docker-registry-server-url https://${{ secrets.REGISTRY }} \
-        --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
-        --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
+        --name $APP_NAME  \
+        --resource-group $RESOURCE_GROUP \
+        --slot $SLOT_NAME \
+        --docker-custom-image-name $REGISTRY/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --docker-registry-server-url https://$REGISTRY \
+        --docker-registry-server-user $REGISTRY_USERNAME \
+        --docker-registry-server-password $REGISTRY_PASSWORD
 
-    - name: Cleanup AAS Slot
-      if: github.event.action == 'closed'
-      run: |
-        az webapp deployment slot delete \
-        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --name ${{ secrets.APP_NAME }}  \
-        --slot ${{ github.event.pull_request.number }}
-        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ github.event.pull_request.number }}"
-
-    - name: Delete Container Image from ACR
-      if: github.event.action == 'closed'
-      run: |
-        az acr repository delete \
-        --name ${{ secrets.REGISTRY_NAME }} \
-        --image ${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-        --yes
-        echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.TAG }}"
+    
