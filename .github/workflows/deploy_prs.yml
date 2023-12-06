@@ -26,18 +26,26 @@ jobs:
     - name: Delete Key Vault Access Policy
       if: github.event.action == 'closed' || github.event.action == 'synchronize'
       run: |
-        APP_OBJECT_ID=$(az webapp identity show --name ${{ secrets.APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }} --query principalId -o tsv)
-        az keyvault delete-policy --name ${{ secrets.KEY_VAULT_NAME }} --object-id $APP_OBJECT_ID
-        echo "Key Vault access policy deleted for ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+        SLOT_NAME="${{ env.TAG }}"
+        APP_NAME="${{ secrets.APP_NAME }}"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --query principalId -o tsv)
+        az keyvault delete-policy --name $KEY_VAULT_NAME --object-id $APP_OBJECT_ID
+        echo "Key Vault access policy deleted for $APP_NAME-$SLOT_NAME"
 
     - name: Cleanup AAS Slot
       if: github.event.action == 'closed' || github.event.action == 'synchronize'
       run: |
+        SLOT_NAME="${{ env.TAG }}"
+        APP_NAME="${{ secrets.APP_NAME }}"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
         az webapp deployment slot delete \
-        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --name ${{ secrets.APP_NAME }}  \
-        --slot ${{ env.TAG }}
-        echo "Deployment slot deleted: ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+        --resource-group $RESOURCE_GROUP \
+        --name $APP_NAME  \
+        --slot $SLOT_NAME
+        echo "Deployment slot deleted: $APP_NAME-$SLOT_NAME"
   
     - name: Delete Container Image from ACR
       if: github.event.action == 'closed' || github.event.action == 'synchronize'
@@ -73,13 +81,15 @@ jobs:
       run: |
         SLOT_NAME="${{ env.TAG }}"
         APP_NAME="${{ secrets.APP_NAME }}"
-        az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
-        az webapp config appsettings set --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME --settings TEST_SECRET="@Microsoft.KeyVault(SecretUri=https://${{ secrets.KEY_VAULT_NAME }}.vault.azure.net/secrets/TestSecret)"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        az webapp deployment slot create --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
+        az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings TEST_SECRET="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/TestSecret)"
         echo "Added application settings to the App Service Slot"
-        az webapp identity assign --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
+        az webapp identity assign --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
         echo "Assigned a managed identity to the App Service Slot"
-        echo "APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME --query principalId -o tsv)" >> $GITHUB_ENV
-        echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+        echo "APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --query principalId -o tsv)" >> $GITHUB_ENV
+        echo "Deployment slot created: $APP_NAME-$SLOT_NAME"
     
     - name: Update Key Vault Access Policy
       if: github.event.action != 'closed'
@@ -90,13 +100,19 @@ jobs:
     - name: Deploy New Image from ACR to New Slot
       if: github.event.action != 'closed'
       run: |
+        APP_NAME="${{ secrets.APP_NAME }}"
+        RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
+        KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        REGISTRY="${{ secrets.REGISTRY }}"
+        REGISTRY_USERNAME="${{ secrets.REGISTRY_USERNAME }}"
+        REGISTRY_PASSWORD="${{ secrets.REGISTRY_PASSWORD }}"
         az webapp config container set \
-        --name ${{ secrets.APP_NAME }}  \
-        --resource-group ${{ secrets.RESOURCE_GROUP }} \
-        --slot ${{ env.TAG }} \
-        --docker-custom-image-name ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
-        --docker-registry-server-url https://${{ secrets.REGISTRY }} \
-        --docker-registry-server-user ${{ secrets.REGISTRY_USERNAME }} \
-        --docker-registry-server-password ${{ secrets.REGISTRY_PASSWORD }}
+        --name $APP_NAME  \
+        --resource-group $RESOURCE_GROUP \
+        --slot $SLOT_NAME \
+        --docker-custom-image-name $REGISTRY/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+        --docker-registry-server-url https://$REGISTRY \
+        --docker-registry-server-user $REGISTRY_USERNAME \
+        --docker-registry-server-password $REGISTRY_PASSWORD
 
     
