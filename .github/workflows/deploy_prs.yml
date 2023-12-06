@@ -54,6 +54,12 @@ jobs:
       run: |
         docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+    
+    - name: Get Key Vault Secrets
+      if: github.event.action != 'closed'
+      id: get_secrets
+      run: |
+        echo "TEST_SECRET_VALUE=$(az keyvault secret show --name TestSecretName --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)" >> $GITHUB_ENV
 
     - name: Create Deployment Slot
       if: github.event.action != 'closed'
@@ -62,6 +68,7 @@ jobs:
         APP_NAME="${{ secrets.APP_NAME }}"
         az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
         echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+        az webapp config appsettings set --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME --settings TEST_SECRET=${{ env.TEST_SECRET_VALUE }}
 
     - name: Deploy from ACR to Slot
       if: github.event.action != 'closed'
