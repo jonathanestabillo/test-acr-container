@@ -23,6 +23,13 @@ jobs:
       with:
         creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
 
+    - name: Delete Key Vault Access Policy
+      if: github.event.action == 'closed' || github.event.action == 'synchronize'
+      run: |
+        APP_OBJECT_ID=$(az webapp identity show --name ${{ secrets.APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }} --query principalId -o tsv)
+        az keyvault delete-policy --name ${{ secrets.KEY_VAULT_NAME }} --object-id $APP_OBJECT_ID
+        echo "Key Vault access policy deleted for ${{ secrets.APP_NAME }}-${{ env.TAG }}"
+
     - name: Cleanup AAS Slot
       if: github.event.action == 'closed' || github.event.action == 'synchronize'
       run: |
@@ -55,11 +62,11 @@ jobs:
         docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
         docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
     
-    - name: Get Key Vault Secrets
-      if: github.event.action != 'closed'
-      id: get_secrets
-      run: |
-        echo "TEST_SECRET_VALUE=$(az keyvault secret show --name TestSecretName --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)" >> $GITHUB_ENV
+#    - name: Get Key Vault Secrets
+#      if: github.event.action != 'closed'
+#      id: get_secrets
+#      run: |
+#        echo "TEST_SECRET_VALUE=$(az keyvault secret show --name TestSecretName --vault-name ${{ secrets.KEY_VAULT_NAME }} --query value -o tsv)" >> $GITHUB_ENV
 
     - name: Create Deployment Slot
       if: github.event.action != 'closed'
@@ -67,8 +74,17 @@ jobs:
         SLOT_NAME="${{ env.TAG }}"
         APP_NAME="${{ secrets.APP_NAME }}"
         az webapp deployment slot create --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
+        az webapp config appsettings set --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME --settings TEST_SECRET=@Microsoft.KeyVault(SecretUri=https://${{ secrets.KEY_VAULT_NAME }}.vault.azure.net/secrets/TestSecret)
+        az webapp identity assign --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME
+        echo "Get the object ID of the App Service Slot's managed identity..."
+        echo "APP_OBJECT_ID=$(az webapp identity show --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME --query principalId -o tsv)" >> $GITHUB_ENV
         echo "Deployment slot created: ${{ secrets.APP_NAME }}-${{ env.TAG }}"
-        az webapp config appsettings set --name $APP_NAME --resource-group ${{ secrets.RESOURCE_GROUP }} --slot $SLOT_NAME --settings TEST_SECRET=${{ env.TEST_SECRET_VALUE }}
+    
+    - name: Update Key Vault Access Policy
+      if: github.event.action != 'closed'
+      run: |
+        az keyvault set-policy --name ${{ secrets.KEY_VAULT_NAME }} --object-id ${{ env.APP_OBJECT_ID }} --secret-permissions get list
+        echo "Key Vault access policy updated for ${{ secrets.APP_NAME }}-${{ env.TAG }}"
 
     - name: Deploy from ACR to Slot
       if: github.event.action != 'closed'
