@@ -100,6 +100,7 @@ jobs:
     - name: Deploy New Image from ACR to New Slot
       if: github.event.action != 'closed'
       run: |
+        SLOT_NAME="${{ env.TAG }}"
         APP_NAME="${{ secrets.APP_NAME }}"
         RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
         KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
