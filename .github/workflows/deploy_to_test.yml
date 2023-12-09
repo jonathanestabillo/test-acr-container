@@ -39,22 +39,22 @@ jobs:
           docker build . -t ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
-#      - name: Deploy to AAS
-#        uses: azure/webapps-deploy@v2
-#        with:
-#          app-name: ${{ secrets.APP_NAME }}
-#          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
-#          images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-#          
-#      - name: Login to Azure
-#        uses: azure/login@v1
-#        with:
-#          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
-#      
-#      - name: Delete Container Image from ACR
-#        run: |
-#          az acr repository delete \
-#          --name ${{ secrets.REGISTRY_NAME }} \
-#          --image ${{ env.IMAGE_NAME }}:${{ env.PREV_COMMIT_SHA }} \
-#          --yes
-#          echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.PREV_COMMIT_SHA }}"
+      - name: Deploy to AAS
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.APP_NAME }}
+          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+          images: ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+      
+      - name: Delete Container Image from ACR
+        run: |
+          az acr repository delete \
+          --name ${{ secrets.REGISTRY_NAME }} \
+          --image ${{ env.IMAGE_NAME }}:${{ env.PREV_COMMIT_SHA }} \
+          --yes
+          echo "Container image deleted: ${{ env.IMAGE_NAME }}:${{ env.PREV_COMMIT_SHA }}"

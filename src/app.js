@@ -3,6 +3,20 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const { MongoClient } = require('mongodb');
+
+// Connect to the db
+const client = new MongoClient(process.env.MONGO_URL);
+
+// Connect to the MongoDB cluster
+(async function connectToMongoDB() {
+  try {
+    await client.connect();
+    console.log('Connected to MongoDB');
+  } catch (err) {
+    console.error('Error connecting to MongoDB:', err);
+  }
+})();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -19,6 +33,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use((req, res, next) => {
+  req.dbClient = client;
+  next();
+});
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
