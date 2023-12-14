@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start:local": "MONGO_URL=mongodb+srv://jonestabillo:test123@atlascluster.wfjxd07.mongodb.net/test-db MONGO_DB=test-db node ./src/bin/www",
+    "start:local": "node ./src/bin/www",
     "start": "node ./src/bin/www"
   },
   "dependencies": {
