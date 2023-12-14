@@ -6,7 +6,7 @@ var logger = require('morgan');
 const { MongoClient } = require('mongodb');
 
 // Connect to the db
-const uri = 'mongodb+srv://dabblefox_dev:3JqjuL9mX8v1zRWJ@cluster0.h8nx6.mongodb.net/?retryWrites=true&w=majority';
+const uri = 'mongodb+srv://dabblefox_dev:3JqjuL9mX8v1zRWJ@cluster0-pri.h8nx6.mongodb.net/?retryWrites=true&w=majority';
 const client = new MongoClient(uri);
 
 // Connect to the MongoDB cluster
