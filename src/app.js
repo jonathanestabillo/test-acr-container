@@ -5,8 +5,12 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const { MongoClient } = require('mongodb');
 
+const HOST = process.env.DB_HOST;
+const USERNAME = process.env.DB_USER;
+const PASSWORD = process.env.DB_PASSWORD;
+
 // Connect to the db
-const uri = 'mongodb+srv://dabblefox_dev:3JqjuL9mX8v1zRWJ@cluster0-pri.h8nx6.mongodb.net/?retryWrites=true&w=majority';
+const uri = `mongodb+srv://${USERNAME}:${PASSWORD}@${HOST}/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
 
 // Connect to the MongoDB cluster
@@ -16,12 +20,14 @@ const client = new MongoClient(uri);
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);
+    exit(1);
   }
 })();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var greetRouter = require('./routes/greet');
+const { exit } = require('process');
 
 var app = express();
 
