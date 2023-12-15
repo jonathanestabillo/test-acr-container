@@ -52,10 +52,8 @@ jobs:
           az webapp deployment slot create --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
           az webapp vnet-integration add --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --vnet $VNET --subnet $SUBNET
           echo "Added VNet Integration"
-          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_HOST="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBHost)"
-          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_NAME="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DB)"
-          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_USER="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBUser)"
-          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_PASSWORD="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBPassword)"
+          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_CONNECTION_URI="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBConnectionURI)"
+          az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_NAME="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBName)"
           echo "Added application settings to the App Service Slot"
           az webapp identity assign --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
           echo "Assigned a managed identity to the App Service Slot"
