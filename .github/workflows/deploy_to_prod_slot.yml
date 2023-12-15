@@ -49,6 +49,8 @@ jobs:
           APP_NAME="${{ secrets.APP_NAME }}"
           RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
           KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+          VNET="${{ secrets.VNET }}"
+          SUBNET="${{ secrets.SUBNET }}"
           az webapp deployment slot create --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
           az webapp vnet-integration add --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --vnet $VNET --subnet $SUBNET
           echo "Added VNet Integration"
