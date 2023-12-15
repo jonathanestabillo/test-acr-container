@@ -83,8 +83,13 @@ jobs:
         APP_NAME="${{ secrets.APP_NAME }}"
         RESOURCE_GROUP="${{ secrets.RESOURCE_GROUP }}"
         KEY_VAULT_NAME="${{ secrets.KEY_VAULT_NAME }}"
+        VNET="${{ secrets.VNET }}"
+        SUBNET="${{ secrets.SUBNET }}"
         az webapp deployment slot create --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
-        az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings TEST_SECRET="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/TestSecret)"
+        az webapp vnet-integration add --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --vnet $VNET --subnet $SUBNET
+        echo "Added VNet Integration"
+        az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_CONNECTION_URI="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBConnectionURI)"
+        az webapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME --settings DB_NAME="@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT_NAME.vault.azure.net/secrets/DBName)"
         echo "Added application settings to the App Service Slot"
         az webapp identity assign --name $APP_NAME --resource-group $RESOURCE_GROUP --slot $SLOT_NAME
         echo "Assigned a managed identity to the App Service Slot"
@@ -115,5 +120,3 @@ jobs:
         --docker-registry-server-url https://$REGISTRY \
         --docker-registry-server-user $REGISTRY_USERNAME \
         --docker-registry-server-password $REGISTRY_PASSWORD
-
-    
