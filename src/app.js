@@ -5,13 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const { MongoClient } = require('mongodb');
 
-const HOST = process.env.DB_HOST;
-const USERNAME = process.env.DB_USER;
-const PASSWORD = process.env.DB_PASSWORD;
-
 // Connect to the db
-const uri = `mongodb+srv://${USERNAME}:${PASSWORD}@${HOST}/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri);
+const client = new MongoClient(process.env.DB_CONNECTION_URI);
 
 // Connect to the MongoDB cluster
 (async function connectToMongoDB() {
